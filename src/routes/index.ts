@@ -1,5 +1,5 @@
 import express from 'express'
-import { copyDatatoKB, createDb, createKnowledgeBase, deleteTable, enterDataToDB, enterDataToKB, getALlDataFromKB, seeAllData } from '../controllers/index.controller';
+import { copyDatatoKB, createDb, createKnowledgeBase, customQuery, deleteKB, deleteTable, enterDataToDB, enterDataToKB, getALlDataFromKB, seeAllData } from '../controllers/index.controller';
 
 export const router = express.Router();
 
@@ -12,3 +12,5 @@ router.route('/deleteTable').get(deleteTable);
 router.route('/create-KB').get(createKnowledgeBase);
 router.route('/copy_data_to_KB').get(copyDatatoKB);
 router.route('/get_data_from_KB').get(getALlDataFromKB);
+router.route('/deleteKB').get(deleteKB);
+router.route('/getFromPrompt').post(customQuery);

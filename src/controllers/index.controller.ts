@@ -34,7 +34,7 @@ export const seeAllData = asyncHandler((req, res) => {
 })
 
 export const deleteTable = asyncHandler((req, res) => {
-    pool.query('DROP table studentTable', (error, result) => {
+    pool.query('DROP TABLE studentTable', (error, result) => {
         if (error) {
             throw error
         }
@@ -51,24 +51,47 @@ export const deleteTable = asyncHandler((req, res) => {
 //     }
 // }
 
-// Creating Knowledge Base
+// Connection postgresql to mindsDB
+export const connectionPOstgres = asyncHandler(async (req, res) => {
+    try {
+        const query = `CREATE DATABASE postgresql_conn 
+                        WITH ENGINE = 'pgvector', 
+                        PARAMETERS = {
+                            "host": "host.docker.internal",
+                            "port": 5432,
+                            "database": "mindsdb",
+                            "user": "postgres",
+                            "password": "8967326124",
+                            "distance": "cosine"
+                        };`
+        let result = await MindsDB.SQL.runQuery(query);
+        console.log(result);
+        res.send(result)
+    } catch (error) {
+        console.log(error);
+    }
+})
+
+
+// Creating Knowledge Base and defined the metadata columns
 export const createKnowledgeBase = asyncHandler(async (req, res) => {
     try {
         const query = `CREATE KNOWLEDGE_BASE student_kb
-                            USING
-                                embedding_model = {
-                                    "provider": "ollama",
-                                    "model_name": "nomic-embed-text",
-                                    "base_url": "http://host.docker.internal:11434"
-                                },
-                                reranking_model = {
-                                    "provider": "ollama",
-                                    "model_name": "gemma",
-                                    "base_url": "http://host.docker.internal:11434"
-                                },
-                                metadata_columns = ['name', 'month', 'year'],
-                                content_columns = ['expense'],
-                                id_column = 'id';`
+                        USING
+                            embedding_model = {
+                                "provider": "ollama",
+                                "model_name": "nomic-embed-text",
+                                "base_url": "http://host.docker.internal:11434"
+                            },
+                            reranking_model = {
+                                "provider": "ollama",
+                                "model_name": "gemma",
+                                "base_url": "http://host.docker.internal:11434"
+                            },
+                            storage = postgresql_conn.student_kb_table,
+                            metadata_columns = ['name','year'],
+                            content_columns = ['content'],
+                            id_column = 'id';`
         let result = await MindsDB.SQL.runQuery(query);
         console.log(result);
         res.send(result)
@@ -78,7 +101,7 @@ export const createKnowledgeBase = asyncHandler(async (req, res) => {
 })
 
 // Load My PostgreSQL data into KB
-export const copyDatatoKB = asyncHandler(async(req, res)=>{
+export const copyDatatoKB = asyncHandler(async (req, res) => {
     try {
         const query = `INSERT INTO student_kb
                             SELECT * FROM postgresql_conn.studentTable`;
@@ -94,7 +117,7 @@ export const copyDatatoKB = asyncHandler(async(req, res)=>{
 export const enterDataToKB = asyncHandler(async (req, res) => {
     try {
         const { name, month, year, expense } = req.body;
-        const query = `INSERT INTO studentTable (name, month, year, expense) VALUES ( ${name}, ${month}, ${year}, ${expense} )`;
+        const query = `INSERT INTO studentTable (name, month, year, expense) VALUES ( ${month}, ${name}, ${year}, ${expense} )`;
         let result = await MindsDB.SQL.runQuery(query)
         console.log(result);
         res.send(result);
@@ -104,7 +127,7 @@ export const enterDataToKB = asyncHandler(async (req, res) => {
 })
 
 // Get all data from KB
-export const getALlDataFromKB = asyncHandler(async (req, res)=>{
+export const getALlDataFromKB = asyncHandler(async (req, res) => {
     try {
         const query = `SELECT * FROM student_kb`;
         let result = await MindsDB.SQL.runQuery(query)
@@ -112,5 +135,78 @@ export const getALlDataFromKB = asyncHandler(async (req, res)=>{
         res.send(result);
     } catch (error) {
         throw error;
-    }    
+    }
+})
+
+// Delete Knowledge Base
+export const deleteKB = asyncHandler(async (req, res) => {
+    try {
+        const query = `DROP KNOWLEDGE_BASE student_kb;`;
+        let result = await MindsDB.SQL.runQuery(query)
+        console.log(result);
+        res.send(result);
+    } catch (error) {
+        throw error;
+    }
+})
+
+// KB Sementic Queries
+export const customQuery = asyncHandler(async (req, res) => {
+    try {
+        const { prompt } = req.body;
+        const query = `SELECT * FROM student_kb WHERE text_search('${prompt}');`;
+        let result = await MindsDB.SQL.runQuery(query)
+        console.log(result);
+        res.send(result);
+    } catch (error) {
+        throw error;
+    }
+})
+
+// Creating Index on KB 
+export const createIndexToKB = asyncHandler(async (req, res) => {
+    try {
+        const query = `CREATE INDEX ON KNOWLEDGE_BASE student_kb;`;
+        let result = await MindsDB.SQL.runQuery(query)
+        console.log(result);
+        res.send(result);
+    } catch (error) {
+        throw error;
+    }
+})
+
+// Creating JOBS
+export const creatingJobs = asyncHandler(async (req, res) => {
+    try {
+        const query = `CREATE JOB refresh_student_kb (SELECT * FROM postgresql_conn.studentTable)
+                        START NOW
+                        EVERY 6 hours;
+`;
+        let result = await MindsDB.SQL.runQuery(query)
+        console.log(result);
+        res.send(result);
+    } catch (error) {
+        throw error;
+    }
+})
+
+// Integrating the AI Tables 
+export const createAITables = asyncHandler(async (req, res) => {
+    try {
+        const query = `CREATE MODEL sentiment_classifier_model
+                        PREDICT student_kb
+                        USING
+                            engine = 'openai',
+                            model_name = 'gpt-4',
+                            prompt_template = 'describe the sentiment of the reviews
+                                                strictly as "positive", "neutral", or "negative".
+                                                "I love the product":positive
+                                                "It is a scam":negative
+                                                "{{review}}.":';`;
+        let result = await MindsDB.SQL.runQuery(query)
+        console.log(result);
+        res.send(result);
+    } catch (error) {
+        throw error;
+    }
 })
