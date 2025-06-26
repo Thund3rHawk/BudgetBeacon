@@ -1,11 +1,13 @@
 import express from 'express'
-import {connectionPostgres, copyDatatoKB,
+import {askAIAgent, connectionPostgres, copyDatatoKB,
+        createAIAgent,
         createAITables,
         createDb,
         createIndexToKB,
         createKnowledgeBase,
         creatingJobs,
         customQuery,
+        deleteAIAgent,
         deleteJobs,
         deleteKB,
         deleteTable,
@@ -40,3 +42,8 @@ router.route('/kb/getAllData').get(getALlDataFromKB);
 router.route('/kb/getFromPrompt').post(customQuery);
 router.route('/kb/createIndex').get(createIndexToKB);
 router.route('/kb/delete').get(deleteKB);
+
+// AI Agent Routes
+router.route('/agent/create').get(createAIAgent);
+router.route('/agent/ask').post(askAIAgent);
+router.route('/agent/delete').get(deleteAIAgent);

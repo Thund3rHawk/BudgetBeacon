@@ -221,3 +221,56 @@ export const createAITables = asyncHandler(async (req, res) => {
         throw error;
     }
 })
+
+// Creating Agents  (10 Points)
+export const createAIAgent = asyncHandler (async (req, res)=>{
+    try {
+        const query = `CREATE AGENT my_agent
+                        USING
+                            model = 'gemini-2.0-flash',
+                            google_api_key = '${process.env.GEMINI_API_KEY}',
+                            include_knowledge_bases = ['mindsdb.student_kb'],
+                            include_tables = ['postgresql_conn.studentTable'],
+                            prompt_template = 'The knowledge base "student_kb" and the table "studentTable" store student expense records.
+                            Each record contains: id, month, name, year, and expense.
+                            - "month": the month of the expense (e.g., January, February, etc.)
+                            - "name": the students name
+                            - "year": the year of the expense
+                            - "expense": the amount or description of the expense
+                            Use this information to answer questions about student expenses, trends, or summaries.
+                            If asked about a specific student, month, or year, filter the data accordingly.
+                            ';`
+        let result = await MindsDB.SQL.runQuery(query)
+        console.log(result);
+        res.send(result);        
+    } catch (error) {
+        throw error;
+    }
+})
+
+export const deleteAIAgent = asyncHandler (async (req, res)=>{
+    try {
+        const query = `DROP AGENT my_agent`
+        let result = await MindsDB.SQL.runQuery(query)
+        console.log(result);
+        res.send(result);        
+    } catch (error) {
+        throw error;
+    }
+})
+
+export const askAIAgent = asyncHandler (async (req, res)=>{
+    try {
+        const {question} = req.body
+        const query = `SELECT answer
+                        FROM my_agent WHERE question = '${question}';`
+        let result = await MindsDB.SQL.runQuery(query)
+        console.log(result);
+        res.send(result);        
+    } catch (error) {
+        throw error;
+    }
+})
+
+
+
