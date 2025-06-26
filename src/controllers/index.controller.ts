@@ -5,7 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import MindsDB from 'mindsdb-js-sdk';
 
 export const createDb = asyncHandler((req: Request, res: Response) => {
-    pool.query('CREATE TABLE IF NOT EXISTS studentTable (id SERIAL PRIMARY KEY, name VARCHAR(100), month VARCHAR(12), year INTEGER, expense INTEGER)', (error, result) => {
+    pool.query('CREATE TABLE IF NOT EXISTS studentTable (id SERIAL PRIMARY KEY,  month VARCHAR(12), name VARCHAR(100), year VARCHAR(12), expense VARCHAR(100))', (error, result) => {
         if (error) {
             throw error
         }
@@ -15,7 +15,7 @@ export const createDb = asyncHandler((req: Request, res: Response) => {
 
 export const enterDataToDB = asyncHandler((req, res) => {
     const { name, month, year, expense } = req.body;
-    const query = `INSERT INTO studentTable (name, month, year, expense) VALUES ( $1, $2, $3, $4 )`;
+    const query = `INSERT INTO studentTable (month, name, year, expense) VALUES ( $1, $2, $3, $4 )`;
     pool.query(query, [name, month, year, expense], (error, result) => {
         if (error) {
             throw error
@@ -52,7 +52,7 @@ export const deleteTable = asyncHandler((req, res) => {
 // }
 
 // Connection postgresql to mindsDB
-export const connectionPOstgres = asyncHandler(async (req, res) => {
+export const connectionPostgres = asyncHandler(async (req, res) => {
     try {
         const query = `CREATE DATABASE postgresql_conn 
                         WITH ENGINE = 'pgvector', 
@@ -76,7 +76,7 @@ export const connectionPOstgres = asyncHandler(async (req, res) => {
 // Creating Knowledge Base and defined the metadata columns
 export const createKnowledgeBase = asyncHandler(async (req, res) => {
     try {
-        const query = `CREATE KNOWLEDGE_BASE student_kb
+        const query = `CREATE KNOWLEDGE_BASE IF NOT EXISTS student_kb
                         USING
                             embedding_model = {
                                 "provider": "ollama",
@@ -90,7 +90,7 @@ export const createKnowledgeBase = asyncHandler(async (req, res) => {
                             },
                             storage = postgresql_conn.student_kb_table,
                             metadata_columns = ['name','year'],
-                            content_columns = ['content'],
+                            content_columns = ['expense'],
                             id_column = 'id';`
         let result = await MindsDB.SQL.runQuery(query);
         console.log(result);
@@ -180,8 +180,19 @@ export const creatingJobs = asyncHandler(async (req, res) => {
     try {
         const query = `CREATE JOB refresh_student_kb (SELECT * FROM postgresql_conn.studentTable)
                         START NOW
-                        EVERY 6 hours;
-`;
+                        EVERY 6 hours;`;
+        let result = await MindsDB.SQL.runQuery(query)
+        console.log(result);
+        res.send(result);
+    } catch (error) {
+        throw error;
+    }
+})
+
+// Delete Jobs
+export const deleteJobs = asyncHandler(async (req, res) => {
+    try {
+        const query = `DROP JOB refresh_student_kb`;
         let result = await MindsDB.SQL.runQuery(query)
         console.log(result);
         res.send(result);
@@ -196,8 +207,8 @@ export const createAITables = asyncHandler(async (req, res) => {
         const query = `CREATE MODEL sentiment_classifier_model
                         PREDICT student_kb
                         USING
-                            engine = 'openai',
-                            model_name = 'gpt-4',
+                            engine = 'ollama',
+                            model_name = 'gemma',
                             prompt_template = 'describe the sentiment of the reviews
                                                 strictly as "positive", "neutral", or "negative".
                                                 "I love the product":positive

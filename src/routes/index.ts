@@ -1,16 +1,42 @@
 import express from 'express'
-import { copyDatatoKB, createDb, createKnowledgeBase, customQuery, deleteKB, deleteTable, enterDataToDB, enterDataToKB, getALlDataFromKB, seeAllData } from '../controllers/index.controller';
-
+import {connectionPostgres, copyDatatoKB,
+        createAITables,
+        createDb,
+        createIndexToKB,
+        createKnowledgeBase,
+        creatingJobs,
+        customQuery,
+        deleteJobs,
+        deleteKB,
+        deleteTable,
+        enterDataToDB,
+        enterDataToKB,
+        getALlDataFromKB,
+        seeAllData} from '../controllers/index.controller';
+        
 export const router = express.Router();
 
-router.route('/').get(createDb);
-// router.route('/run-query').get(checkQuery);
+
+router.route('/').get((req,res)=>{
+    res.send('Hello this is from Budget Beacon')
+});
+
+router.route('/createDB').get(createDb);
 router.route('/enterdata').post(enterDataToDB);
-router.route('/enterdata-to-KB').post(enterDataToKB);
 router.route('/checkData').get(seeAllData);
 router.route('/deleteTable').get(deleteTable);
-router.route('/create-KB').get(createKnowledgeBase);
-router.route('/copy_data_to_KB').get(copyDatatoKB);
-router.route('/get_data_from_KB').get(getALlDataFromKB);
-router.route('/deleteKB').get(deleteKB);
-router.route('/getFromPrompt').post(customQuery);
+
+// Minds routes
+router.route('/minds/connectToPstgres').get(connectionPostgres);
+router.route('/minds/createAITables').get(createAITables);
+router.route('/minds/createJob').get(creatingJobs);
+router.route('/minds/deleteJob').get(deleteJobs);
+
+// Knowledge Base Routes
+router.route('/kb/create').get(createKnowledgeBase);
+router.route('/kb/enterdata').post(enterDataToKB);
+router.route('/kb/copyDataFromDB').get(copyDatatoKB);
+router.route('/kb/getAllData').get(getALlDataFromKB);
+router.route('/kb/getFromPrompt').post(customQuery);
+router.route('/kb/createIndex').get(createIndexToKB);
+router.route('/kb/delete').get(deleteKB);
